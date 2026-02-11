@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
 from src.exceptions.db_exceptions import NotFoundError
+from src.rmq import get_rmq_publisher
+from src.rmq.publisher import RabbitMQPublisher
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
 from src.services.user_service import UserService
 
@@ -71,3 +73,16 @@ async def update_user(
         raise HTTPException(status_code=404, detail="User not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
+
+
+
+@user_router.post("/register-async")
+async def register_user_async(
+    user_data: UserCreate,
+    publisher: RabbitMQPublisher = Depends(get_rmq_publisher)
+):
+    # Instead of calling UserService (which hits the DB now), 
+    # we just toss the data into RabbitMQ and return 202 Accepted.
+    await publisher.publish(user_data.model_dump())
+
+    return {"message": "User registration is being processed in the background"}
