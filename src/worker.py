@@ -1,10 +1,10 @@
 import asyncio
 import json
 import logging
+from contextlib import asynccontextmanager
 
 from aio_pika import IncomingMessage, connect
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from contextlib import asynccontextmanager
 
 from src.database import get_db
 from src.schemas.user_schema import UserCreate

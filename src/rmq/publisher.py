@@ -1,7 +1,9 @@
 import json
-import aio_pika
 from typing import Any
+
+import aio_pika
 from fastapi import Request
+
 
 class RabbitMQPublisher:
     def __init__(self, connection_url: str, queue_name: str):
@@ -24,12 +26,9 @@ class RabbitMQPublisher:
             await self.connect()
 
         body = json.dumps(message).encode()
-        
+
         await self.channel.default_exchange.publish(
-            aio_pika.Message(
-                body=body,
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
-            ),
+            aio_pika.Message(body=body, delivery_mode=aio_pika.DeliveryMode.PERSISTENT),
             routing_key=self.queue_name,
         )
 

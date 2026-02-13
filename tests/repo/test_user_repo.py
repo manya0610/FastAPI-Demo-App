@@ -9,7 +9,7 @@ from src.services.user_service import UserService
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_repository_create_user(db_session:AsyncSession):
+async def test_repository_create_user(db_session: AsyncSession):
     """Test raw repository creation without service overhead."""
     repo = UserRepository(db_session)
     user_data = UserCreate(name="db_tester")

@@ -75,13 +75,11 @@ async def update_user(
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-
 @user_router.post("/register-async")
 async def register_user_async(
-    user_data: UserCreate,
-    publisher: RabbitMQPublisher = Depends(get_rmq_publisher)
+    user_data: UserCreate, publisher: RabbitMQPublisher = Depends(get_rmq_publisher)
 ):
-    # Instead of calling UserService (which hits the DB now), 
+    # Instead of calling UserService (which hits the DB now),
     # we just toss the data into RabbitMQ and return 202 Accepted.
     await publisher.publish(user_data.model_dump())
 
