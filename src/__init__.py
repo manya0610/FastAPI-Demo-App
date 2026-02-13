@@ -19,10 +19,12 @@ file_handler = logging.FileHandler("logs.json")
 logger.addHandler(file_handler)
 
 normal_formatter = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s %(threadName)s %(pathname)s:%(lineno)s - %(funcName)s() - %(message)s"
+    "%(asctime)s - %(name)s - %(levelname)s %(threadName)s %(pathname)s:%(lineno)s \
+          - %(funcName)s() - %(message)s"
 )
 json_formatter = jsonlogger.JsonFormatter(
-    "%(asctime)s - %(name)s - %(levelname)s %(threadName)s %(pathname)s:%(lineno)s - %(funcName)s() - %(message)s"
+    "%(asctime)s - %(name)s - %(levelname)s %(threadName)s %(pathname)s:%(lineno)s \
+        - %(funcName)s() - %(message)s"
 )
 
 stream_handler.setFormatter(normal_formatter)

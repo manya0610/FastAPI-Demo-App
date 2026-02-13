@@ -1,10 +1,9 @@
 import logging
-from abc import ABC
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import redis.asyncio as redis
 from redis import Redis
-from redis.exceptions import ConnectionError, RedisError, TimeoutError
+from redis.exceptions import RedisError
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +51,7 @@ class RedisClientWrapper:
             logger.warning("Redis GET failed for key %s: %s", key, e)
             return None
 
-    async def setex(self, key: str, seconds: int, value: Any) -> bool:
+    async def setex(self, key: str, seconds: int, value: str) -> bool:
         if not self.client:
             return False
         try:
@@ -76,7 +75,7 @@ class RedisClientWrapper:
 class MockRedisWrapper:
     """A simple in-memory version of our Redis wrapper for testing."""
 
-    def __init__(self, should_fail=False):
+    def __init__(self, should_fail: bool = False):
         self.storage = {}
         self.should_fail = should_fail
 
@@ -85,7 +84,7 @@ class MockRedisWrapper:
             return None
         return self.storage.get(key)
 
-    async def setex(self, key: str, seconds: int, value: str):
+    async def setex(self, key: str, _: int, value: str):
         if self.should_fail:
             return False
         self.storage[key] = value

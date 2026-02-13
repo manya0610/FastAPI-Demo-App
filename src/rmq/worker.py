@@ -4,7 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 from aio_pika import IncomingMessage, connect
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.database import get_db
 from src.schemas.user_schema import UserCreate
@@ -21,12 +21,9 @@ AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def process_message(message: IncomingMessage):
-    """
-    This is where the 'work' happens.
-    Using .process() automatically ACKs the message if no error occurs.
-    """
+    # Using .process() automatically ACKs the message if no error occurs.
     async with message.process():
-        logger.info(f" [x] Received message: {message.body.decode()}")
+        logger.info(" [x] Received message:")
 
         # 1. Create a fresh session for this specific message
         async_get_db = asynccontextmanager(get_db)
@@ -41,9 +38,9 @@ async def process_message(message: IncomingMessage):
                 # 2. Use your existing Service Layer logic
                 await service.register_user(user_data)
 
-                logger.info(f" [v] Successfully registered user: {data_dict}")
-            except Exception as e:
-                logger.error(f" [!] Failed to process user: {e}")
+                logger.info(" [v] Successfully registered user %s", data_dict)
+            except Exception:
+                logger.exception(" [!] Failed to process user")
                 # Re-raise to trigger NACK if you want RabbitMQ to retry
                 raise
 

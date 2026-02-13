@@ -2,7 +2,6 @@ import json
 from typing import Any
 
 import aio_pika
-from fastapi import Request
 
 
 class RabbitMQPublisher:
@@ -13,7 +12,6 @@ class RabbitMQPublisher:
         self.channel = None
 
     async def connect(self):
-        """Initializes the connection and channel."""
         if not self.connection or self.connection.is_closed:
             self.connection = await aio_pika.connect_robust(self.connection_url)
             self.channel = await self.connection.channel()
@@ -21,7 +19,6 @@ class RabbitMQPublisher:
             await self.channel.declare_queue(self.queue_name, durable=True)
 
     async def publish(self, message: dict[str, Any]):
-        """Publishes a JSON message to the queue."""
         if not self.channel:
             await self.connect()
 

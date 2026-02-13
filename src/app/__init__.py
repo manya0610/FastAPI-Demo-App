@@ -8,7 +8,7 @@ from src.rmq import rmq_publisher
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     # Startup: Connect to RMQ
     await redis_manager.connect()
     await rmq_publisher.connect()
