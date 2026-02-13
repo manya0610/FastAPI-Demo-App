@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import User
 from src.exceptions.db_exceptions import NotFoundError
-from src.repo.base_repo import BaseRepository
+from src.repo.postgres.base_repo import BaseRepository
 from src.schemas.user_schema import UserCreate, UserUpdate
 
 

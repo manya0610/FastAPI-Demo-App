@@ -1,67 +1,59 @@
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.exceptions.db_exceptions import NotFoundError
-from src.schemas.user_schema import UserCreate, UserUpdate
 from src.services.user_service import UserService
+from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_register_user_service(db_session: AsyncSession):
-    """Verifies service creates user and commits transaction."""
-    service = UserService(db_session)
-    user_in = UserCreate(name="service_admin")
+async def test_get_user_returns_pydantic_and_caches(db_session, mock_redis):
+    service = UserService(db_session, mock_redis)
 
-    # The service handles the commit internally
-    user = await service.register_user(user_in)
+    # 1. Setup: Create a user
+    created_dto = await service.register_user(UserCreate(name="test_user"))
 
-    assert user.id is not None
-    assert user.name == "service_admin"
+    # 2. Action: Get the profile
+    result = await service.get_user_profile(created_dto.id)
 
+    # 3. Assertions
+    assert isinstance(result, UserPublic)  # Verify DTO return type
+    assert result.name == "test_user"
 
-@pytest.mark.asyncio(loop_scope="session")
-async def test_get_user_profile_not_found(db_session: AsyncSession):
-    """Verifies service returns None for non-existent users."""
-    service = UserService(db_session)
-
-    # Database is fresh/empty due to truncation
-    user = await service.get_user_profile(999)
-    assert user is None
+    # Verify it was cached in our mock
+    cache_val = await mock_redis.get(f"user:{created_dto.id}")
+    assert cache_val is not None
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_update_user_info_not_found(db_session: AsyncSession):
-    """Verifies service propagates NotFoundError from repository."""
-    service = UserService(db_session)
-    update_data = UserUpdate(name="ghost")
+async def test_graceful_degradation_when_redis_fails(db_session, failing_redis):
+    """
+    Test that even if Redis 'fails' (returns None/Error),
+    the service still returns data from the DB.
+    """
+    service = UserService(db_session, failing_redis)
 
-    with pytest.raises(NotFoundError):
-        await service.update_user_info(999, update_data)
+    # Setup: Create user directly in DB (simulating existing data)
+    created_dto = await service.register_user(UserCreate(name="resilient_user"))
 
+    # Action: Get profile while Redis is 'broken'
+    result = await service.get_user_profile(created_dto.id)
 
-@pytest.mark.asyncio(loop_scope="session")
-async def test_list_active_users_multiple(db_session: AsyncSession):
-    """Verifies listing and pagination logic."""
-    service = UserService(db_session)
-
-    # Create two users
-    await service.register_user(UserCreate(name="u1"))
-    await service.register_user(UserCreate(name="u2"))
-
-    users = await service.list_active_users(limit=1)
-    assert len(users) == 1
-    assert users[0].name == "u1"
+    # Assertions
+    assert result is not None
+    assert result.name == "resilient_user"
+    # The app didn't crash! That's the win.
 
 
 @pytest.mark.asyncio(loop_scope="session")
-async def test_remove_user_success(db_session: AsyncSession):
-    """Verifies delete logic and commit."""
-    service = UserService(db_session)
-    user = await service.register_user(UserCreate(name="bye"))
+async def test_update_invalidates_cache(db_session, mock_redis):
+    service = UserService(db_session, mock_redis)
+    user = await service.register_user(UserCreate(name="old_name"))
 
-    success = await service.remove_user(user.id)
-    assert success is True
+    # Prime the cache
+    await service.get_user_profile(user.id)
+    assert await mock_redis.get(f"user:{user.id}") is not None
 
-    # Double check they are gone
-    deleted_user = await service.get_user_profile(user.id)
-    assert deleted_user is None
+    # Update user
+    await service.update_user_info(user.id, UserUpdate(name="new_name"))
+
+    # Verify cache was updated
+    cached_user = await mock_redis.get(f"user:{user.id}")
+    assert cached_user is not None

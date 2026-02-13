@@ -6,4 +6,5 @@ lint:
 	ruff check src/
 
 test:
+	. .env.test.rc; \
 	python3 -m pytest -s

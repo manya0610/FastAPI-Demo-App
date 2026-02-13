@@ -1,10 +1,13 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_db
 from src.exceptions.db_exceptions import NotFoundError
+from src.redis_client import RedisClientWrapper, get_redis
 from src.rmq import get_rmq_publisher
 from src.rmq.publisher import RabbitMQPublisher
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
@@ -12,13 +15,18 @@ from src.services.user_service import UserService
 
 user_router = APIRouter(prefix="/user", tags=["users"])
 
+logger = logging.getLogger(__name__)
+
 
 # Dependency to provide the Service Layer
-async def get_user_service(session: AsyncSession = Depends(get_db)) -> UserService:
-    return UserService(session)
+async def get_user_service(
+    session: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)
+) -> UserService:
+    redis_wrapper = RedisClientWrapper(redis)
+    return UserService(session, redis_wrapper)
 
 
-@user_router.post("", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+@user_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
     service: UserService = Depends(get_user_service),
@@ -27,10 +35,11 @@ async def create_user(
         user = await service.register_user(user_data)
         return UserPublic.model_validate(user)
     except Exception as e:
+        logger.exception("error while creating user")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@user_router.get("", response_model=list[UserPublic])
+@user_router.get("")
 async def list_users(
     limit: Annotated[int, Query(le=100)] = 100,
     offset: int = 0,
@@ -41,10 +50,11 @@ async def list_users(
         users = await service.list_active_users(limit=limit, offset=offset)
         return [UserPublic.model_validate(u) for u in users]
     except Exception as e:
+        logger.exception("error while listing user")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-@user_router.get("/{user_id}", response_model=UserPublic)
+@user_router.get("/{user_id}")
 async def get_user(
     user_id: int, service: UserService = Depends(get_user_service)
 ) -> UserPublic:
@@ -54,13 +64,14 @@ async def get_user(
         if not user:
             raise NotFoundError
         return UserPublic.model_validate(user)
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="User not found")
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail="User not found") from e
     except Exception as e:
+        logger.exception("error while fetching user")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-@user_router.patch("/{user_id}", response_model=UserPublic)
+@user_router.patch("/{user_id}")
 async def update_user(
     user_id: int,
     user_data: UserUpdate,
@@ -69,9 +80,10 @@ async def update_user(
     try:
         user = await service.update_user_info(user_id, user_data)
         return UserPublic.model_validate(user)
-    except NotFoundError:
-        raise HTTPException(status_code=404, detail="User not found")
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail="User not found") from e
     except Exception as e:
+        logger.exception("error while updating user")
         raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 

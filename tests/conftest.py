@@ -3,6 +3,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from src.database import Base, DATABASE_URL
+from src.redis_client import MockRedisWrapper
 
 
 # 2. Force a single session-wide event loop
@@ -52,3 +53,13 @@ async def truncate_tables(engine):
     async with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
             await conn.execute(table.delete())
+
+
+@pytest.fixture
+def mock_redis():
+    return MockRedisWrapper()
+
+
+@pytest.fixture
+def failing_redis():
+    return MockRedisWrapper(should_fail=True)
