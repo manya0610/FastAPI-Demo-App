@@ -1,4 +1,4 @@
-from sqlalchemy import update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import User
@@ -30,3 +30,9 @@ class UserRepository(BaseRepository[User]):
             error_message = f"User with id {user_id} not found"
             raise NotFoundError(error_dict={"error": error_message})
         return user
+    
+    async def get_by_username(self, username: str) -> User | None:
+        """Fetch the raw SQLAlchemy model by username."""
+        query = select(User).where(User.name == username)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()

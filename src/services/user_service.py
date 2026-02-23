@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.auth.security import get_password_hash, verify_password
 from src.redis_client import RedisClientWrapper
 from src.repo.postgres.user_repo import UserRepository
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
@@ -19,6 +20,7 @@ class UserService:
         self.redis = redis
 
     async def register_user(self, data: UserCreate) -> UserPublic:
+        data.password = get_password_hash(data.password)
         user_model = await self.repo.create(data)
         await self.session.commit()
         await self.session.refresh(user_model)
@@ -77,3 +79,28 @@ class UserService:
             logger.info("user deleted, id=%s", user_id)
             await self.redis.delete(f"user:{user_id}")
         return success
+
+    async def authenticate_user(
+        self, username: str, password: str
+    ) -> UserPublic | None:
+        """
+        Verifies credentials and returns a Pydantic user object if valid.
+        """
+        # 1. Get the raw model from the repo (we need the hashed_password field)
+        # Note: Repos should usually return the Model, not the DTO, for this reason.
+        user_model = await self.repo.get_by_username(username)
+
+        if not user_model:
+            logger.warning("Auth failed: Username %s not found", username)
+            return None
+
+        # 2. Check the password
+        # This is a CPU-intensive operation (bcrypt)
+        logger.warning("Auth failed: Incorrect password for user %s %s", password, user_model.password)
+        if not verify_password(password, user_model.password):
+            logger.warning("Auth failed: Incorrect password for user %s", username)
+            return None
+
+        # 3. Success! Return the Pydantic DTO
+        logger.info("User %s authenticated successfully", username)
+        return UserPublic.model_validate(user_model)

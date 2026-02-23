@@ -2,28 +2,19 @@ import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from redis import Redis
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.database import get_db
+from src.app.routers.deps import auth_required, get_user_service
 from src.exceptions.db_exceptions import NotFoundError
-from src.redis_client import RedisClientWrapper, get_redis
 from src.rmq import get_rmq_publisher
 from src.rmq.publisher import RabbitMQPublisher
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
 from src.services.user_service import UserService
 
-user_router = APIRouter(prefix="/user", tags=["users"])
+user_router = APIRouter(
+    prefix="/user", tags=["users"], dependencies=[Depends(auth_required)]
+)
 
 logger = logging.getLogger(__name__)
-
-
-# Dependency to provide the Service Layer
-async def get_user_service(
-    session: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)
-) -> UserService:
-    redis_wrapper = RedisClientWrapper(redis)
-    return UserService(session, redis_wrapper)
 
 
 @user_router.post("", status_code=status.HTTP_201_CREATED)

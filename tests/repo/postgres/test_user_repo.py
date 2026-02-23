@@ -13,7 +13,7 @@ from src.services.user_service import UserService
 async def test_repository_create_user(db_session: AsyncSession):
     """Test raw repository creation without service overhead."""
     repo = UserRepository(db_session)
-    user_data = UserCreate(name="db_tester")
+    user_data = UserCreate(name="db_tester", password="1234")
 
     user = await repo.create(user_data)
     await db_session.flush()  # Sync with DB but don't commit yet
@@ -28,7 +28,7 @@ async def test_service_register_user_persistence(
 ):
     """Test that the Service Layer correctly commits to the DB."""
     service = UserService(db_session, mock_redis)
-    user_data = UserCreate(name="service_user")
+    user_data = UserCreate(name="service_user",password="1234")
 
     # Service calls repo.create and session.commit()
     new_user = await service.register_user(user_data)
@@ -57,7 +57,7 @@ async def test_service_update_user(db_session: AsyncSession, mock_redis):
     """Test updating existing data through the service layer."""
     service = UserService(db_session, mock_redis)
     # Setup
-    initial_user = await service.register_user(UserCreate(name="old_me"))
+    initial_user = await service.register_user(UserCreate(name="old_me", password="1234"))
 
     # Update
     update_data = UserUpdate(name="new_me")

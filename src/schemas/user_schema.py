@@ -5,6 +5,7 @@ class UserCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     name: str
+    password: str
 
 
 class UserPublic(BaseModel):
@@ -16,4 +17,5 @@ class UserPublic(BaseModel):
 class UserUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
-    name: str
+    name: str | None = None
+    password: str | None = None
