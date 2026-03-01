@@ -22,7 +22,6 @@ class UserService:
     async def register_user(self, data: UserCreate) -> UserPublic:
         data.password = get_password_hash(data.password)
         user_model = await self.repo.create(data)
-        await self.session.commit()
         await self.session.refresh(user_model)
         user = UserPublic.model_validate(user_model)
         cache_key = f"user:{user.id}"
@@ -61,7 +60,6 @@ class UserService:
     async def update_user_info(self, user_id: int, data: UserUpdate) -> UserPublic:
         cache_key = f"user:{user_id}"
         user_model = await self.repo.update(user_id, data)
-        await self.session.commit()
 
         # Clear cache so next 'get' sees fresh data
         await self.redis.delete(cache_key)
@@ -75,7 +73,6 @@ class UserService:
         """Delete User"""
         success = await self.repo.delete(user_id)
         if success:
-            await self.session.commit()
             logger.info("user deleted, id=%s", user_id)
             await self.redis.delete(f"user:{user_id}")
         return success

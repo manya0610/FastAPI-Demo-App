@@ -32,4 +32,5 @@ class BaseRepository(Generic[ModelType]):
         """Deletes an object and returns True if successful."""
         query = delete(self.model).where(self.model.id == obj_id)
         result = await self.session.execute(query)
+        await self.session.commit()
         return result.rowcount > 0

@@ -15,7 +15,7 @@ class UserRepository(BaseRepository[User]):
         """Create user and return without commit"""
         user = User(**data.model_dump())
         self.session.add(user)
-        await self.session.flush()
+        await self.session.commit()
         return user
 
     async def update(self, user_id: int, data: UserUpdate) -> User:
@@ -29,6 +29,7 @@ class UserRepository(BaseRepository[User]):
         if not user:
             error_message = f"User with id {user_id} not found"
             raise NotFoundError(error_dict={"error": error_message})
+        await self.session.commit()
         return user
     
     async def get_by_username(self, username: str) -> User | None:
