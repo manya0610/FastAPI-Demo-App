@@ -93,7 +93,11 @@ class UserService:
 
         # 2. Check the password
         # This is a CPU-intensive operation (bcrypt)
-        logger.warning("Auth failed: Incorrect password for user %s %s", password, user_model.password)
+        logger.warning(
+            "Auth failed: Incorrect password for user %s %s",
+            password,
+            user_model.password,
+        )
         if not verify_password(password, user_model.password):
             logger.warning("Auth failed: Incorrect password for user %s", username)
             return None

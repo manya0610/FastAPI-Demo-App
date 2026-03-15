@@ -24,22 +24,22 @@ async def get_user_service(
 async def auth_required(
     request: Request,
     token: str = Depends(oauth2_scheme),
-    service: UserService = Depends(get_user_service) # Your existing dependency
+    service: UserService = Depends(get_user_service),  # Your existing dependency
 ):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id_str: str = payload.get("sub")
         if user_id_str is None:
             raise HTTPException(status_code=401, detail="Invalid token payload")
-        
+
         # Optimized lookup (Redis -> DB) via Service Layer
         user = await service.get_user_profile(int(user_id_str))
         if user is None:
             raise HTTPException(status_code=401, detail="User not found")
-        
+
         # Attach user to request state
         request.state.user = user
-        
+
     except (JWTError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -31,7 +31,7 @@ class UserRepository(BaseRepository[User]):
             raise NotFoundError(error_dict={"error": error_message})
         await self.session.commit()
         return user
-    
+
     async def get_by_username(self, username: str) -> User | None:
         """Fetch the raw SQLAlchemy model by username."""
         query = select(User).where(User.name == username)
