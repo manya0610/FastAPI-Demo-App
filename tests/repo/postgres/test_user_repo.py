@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.models import User
-from src.redis_client import MockRedisWrapper
+from src.redis_client import MockRedisClient
 from src.repo.postgres.user_repo import UserRepository
 from src.schemas.user_schema import UserCreate, UserUpdate
 from src.services.user_service import UserService
@@ -24,7 +24,7 @@ async def test_repository_create_user(db_session: AsyncSession):
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_service_register_user_persistence(
-    db_session: AsyncSession, mock_redis: MockRedisWrapper
+    db_session: AsyncSession, mock_redis: MockRedisClient
 ):
     """Test that the Service Layer correctly commits to the DB."""
     service = UserService(db_session, mock_redis)

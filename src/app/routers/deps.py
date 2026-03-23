@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.security import ALGORITHM, SECRET_KEY
 from src.database import get_db
-from src.redis_client import RedisClientWrapper, get_redis
+from src.redis_client import RedisClient, get_redis
 from src.services.user_service import UserService
 
 # tokenUrl points to the login route for Swagger UI compatibility
@@ -17,7 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 async def get_user_service(
     session: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)
 ) -> UserService:
-    redis_wrapper = RedisClientWrapper(redis)
+    redis_wrapper = RedisClient(redis)
     return UserService(session, redis_wrapper)
 
 

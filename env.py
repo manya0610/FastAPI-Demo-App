@@ -1,0 +1,16 @@
+import os
+
+
+APP_ENV = os.getenv("APP_ENV")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+REDIS_DATABASE_INDEX = int(os.getenv("REDIS_DATABASE_INDEX", 0))
+REDIS_POOL_MAX_CONNECTIONS = int(os.getenv("REDIS_POOL_MAX_CONNECTIONS", 10))
+REDIS_URL = os.getenv("REDIS_URL")
+
+RMQ_BROKER_URL= os.getenv("RMQ_BROKER_URL")
+RMQ_QUEUE= os.getenv("RMQ_QUEUE")
+RMQ_EXCHANGE= os.getenv("RMQ_EXCHANGE")
+
+ROOT_PATH = os.getenv("ROOT_PATH")

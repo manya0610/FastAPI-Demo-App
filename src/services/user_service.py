@@ -4,7 +4,8 @@ from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.security import get_password_hash, verify_password
-from src.redis_client import RedisClientWrapper
+from src.redis_client import MockRedisClient, RedisProtocol
+from src.repo.postgres.db_helper import UnitOfWork
 from src.repo.postgres.user_repo import UserRepository
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
 
@@ -13,16 +14,18 @@ logger = logging.getLogger(__name__)
 
 class UserService:
     def __init__(
-        self, session: AsyncSession, redis: RedisClientWrapper
+        self, session: AsyncSession, redis: RedisProtocol = MockRedisClient()
     ) -> "UserService":
         self.session = session
         self.repo = UserRepository(session)
         self.redis = redis
+        self.transaction = UnitOfWork(session)
 
     async def register_user(self, data: UserCreate) -> UserPublic:
         data.password = get_password_hash(data.password)
-        user_model = await self.repo.create(data)
-        await self.session.refresh(user_model)
+        async with self.transaction:
+            user_model = await self.repo.create(data)
+
         user = UserPublic.model_validate(user_model)
         cache_key = f"user:{user.id}"
         await self.redis.setex(cache_key, 3600, user.model_dump_json())
@@ -59,7 +62,8 @@ class UserService:
 
     async def update_user_info(self, user_id: int, data: UserUpdate) -> UserPublic:
         cache_key = f"user:{user_id}"
-        user_model = await self.repo.update(user_id, data)
+        async with self.transaction:
+            user_model = await self.repo.update(user_id, data)
 
         # Clear cache so next 'get' sees fresh data
         await self.redis.delete(cache_key)
@@ -71,7 +75,8 @@ class UserService:
 
     async def remove_user(self, user_id: int) -> bool:
         """Delete User"""
-        success = await self.repo.delete(user_id)
+        async with self.transaction:
+            success = await self.repo.delete(user_id)
         if success:
             logger.info("user deleted, id=%s", user_id)
             await self.redis.delete(f"user:{user_id}")
