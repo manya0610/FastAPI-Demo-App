@@ -1,5 +1,4 @@
 import asyncio
-import json
 import subprocess
 import sys
 from contextlib import asynccontextmanager
@@ -37,15 +36,18 @@ def drop_db():
 def create_tables():
     subprocess.run(["alembic", "upgrade", "head"])
 
+
 async def seed_db():
     await create_user()
+
 
 async def create_user():
     async_get_db = asynccontextmanager(get_db)
     async with async_get_db() as session:
         service = UserService(session)
-        user_data = UserCreate(name = "manish", password= "1234")
+        user_data = UserCreate(name="manish", password="1234")
         await service.register_user(user_data)
+
 
 print("argument list", sys.argv)
 

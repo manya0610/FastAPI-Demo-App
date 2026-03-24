@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
-from sqlalchemy import delete, select, update, insert
+from sqlalchemy import delete, insert, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Ensure Base is the actual DeclarativeBase class
@@ -16,7 +16,6 @@ class BaseRepository(Generic[ModelType]):
     def __init__(self, model: type[ModelType], session: AsyncSession):
         self.model = model
         self.session = session
-
 
     async def create(self, data: BaseModel) -> ModelType:
         """Create user and return without commit"""

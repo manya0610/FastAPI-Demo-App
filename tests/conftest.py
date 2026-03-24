@@ -1,7 +1,9 @@
 import asyncio
+from httpx import ASGITransport, AsyncClient
 import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from src.app import app
 from src.database import Base, DATABASE_URL
 from src.redis_client import MockRedisClient
 
@@ -63,3 +65,12 @@ def mock_redis():
 @pytest.fixture
 def failing_redis():
     return MockRedisClient(should_fail=True)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client():
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://"
+    ) as client:
+        yield client

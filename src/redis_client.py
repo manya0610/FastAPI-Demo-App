@@ -1,9 +1,9 @@
 import logging
 from collections.abc import AsyncGenerator
+from typing import Protocol
 
 import redis.asyncio as redis
 from redis.exceptions import RedisError
-from typing import Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +12,7 @@ class RedisProtocol(Protocol):
     async def get(self, key: str) -> str | None: ...
     async def setex(self, key: str, seconds: int, value: str) -> bool: ...
     async def delete(self, key: str) -> bool: ...
+
 
 class RedisClient:
     _instance: "RedisClient | None" = None
@@ -86,7 +87,7 @@ class MockRedisClient:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, should_fail:bool=False):
+    def __init__(self, should_fail: bool = False):
         if hasattr(self, "_initialized"):
             return
         logger.info("starting mock redis")

@@ -14,11 +14,6 @@ from src.services.user_service import UserService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Connection string (Use your actual DB URL)
-DATABASE_URL = "postgresql+asyncpg://user:pass@localhost/dbname"
-engine = create_async_engine(DATABASE_URL)
-AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
-
 
 async def process_message(message: IncomingMessage):
     # Using .process() automatically ACKs the message if no error occurs.

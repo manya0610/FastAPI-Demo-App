@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import threading
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -22,6 +24,10 @@ async def create_user(
     user_data: UserCreate,
     service: UserService = Depends(get_user_service),
 ) -> UserPublic:
+    
+    loop = asyncio.get_running_loop()
+    logger.info("router event loop: %s %s %s %s", str(loop), loop.is_running(),threading.current_thread().name, type(loop).__name__
+           )
     try:
         user = await service.register_user(user_data)
         return UserPublic.model_validate(user)

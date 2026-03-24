@@ -9,7 +9,6 @@ class UserRepository(BaseRepository[User]):
     def __init__(self, session: AsyncSession) -> "UserRepository":
         super().__init__(User, session)
 
-
     async def get_by_username(self, username: str) -> User | None:
         """Fetch the raw SQLAlchemy model by username."""
         query = select(User).where(User.name == username)

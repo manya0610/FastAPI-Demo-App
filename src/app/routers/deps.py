@@ -40,9 +40,9 @@ async def auth_required(
         # Attach user to request state
         request.state.user = user
 
-    except (JWTError, ValueError):
+    except (JWTError, ValueError) as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from e
