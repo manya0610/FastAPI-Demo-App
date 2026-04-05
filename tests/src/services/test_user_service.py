@@ -1,15 +1,17 @@
 import pytest
 from src.services.user_service import UserService
 from src.schemas.user_schema import UserCreate, UserPublic, UserUpdate
+from tests.fixtures import org_fixture
 
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_get_user_returns_pydantic_and_caches(db_session, mock_redis):
+    org = await org_fixture(db_session)
     service = UserService(db_session, mock_redis)
 
     # 1. Setup: Create a user
     created_dto = await service.register_user(
-        UserCreate(name="test_user", password="1234")
+        UserCreate(name="test_user", password="1234", org_id=org.id)
     )
 
     # 2. Action: Get the profile
@@ -30,11 +32,12 @@ async def test_graceful_degradation_when_redis_fails(db_session, failing_redis):
     Test that even if Redis 'fails' (returns None/Error),
     the service still returns data from the DB.
     """
+    org = await org_fixture(db_session)
     service = UserService(db_session, failing_redis)
 
     # Setup: Create user directly in DB (simulating existing data)
     created_dto = await service.register_user(
-        UserCreate(name="resilient_user", password="1234")
+        UserCreate(name="resilient_user", password="1234", org_id=org.id)
     )
 
     # Action: Get profile while Redis is 'broken'
@@ -48,8 +51,11 @@ async def test_graceful_degradation_when_redis_fails(db_session, failing_redis):
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_update_invalidates_cache(db_session, mock_redis):
+    org = await org_fixture(db_session)
     service = UserService(db_session, mock_redis)
-    user = await service.register_user(UserCreate(name="old_name", password="1234"))
+    user = await service.register_user(
+        UserCreate(name="old_name", password="1234", org_id=org.id)
+    )
 
     # Prime the cache
     await service.get_user_profile(user.id)

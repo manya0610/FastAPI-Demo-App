@@ -7,13 +7,15 @@ from src.redis_client import MockRedisClient
 from src.repo.postgres.user_repo import UserRepository
 from src.schemas.user_schema import UserCreate, UserUpdate
 from src.services.user_service import UserService
+from tests.fixtures import org_fixture
 
 
 @pytest.mark.asyncio(loop_scope="session")
 async def test_repository_create_user(db_session: AsyncSession):
     """Test raw repository creation without service overhead."""
+    org = await org_fixture(db_session)
     repo = UserRepository(db_session)
-    user_data = UserCreate(name="db_tester", password="1234")
+    user_data = UserCreate(name="db_tester", password="1234", org_id=org.id)
 
     user = await repo.create(user_data)
     await db_session.flush()  # Sync with DB but don't commit yet
@@ -27,8 +29,9 @@ async def test_service_register_user_persistence(
     db_session: AsyncSession, mock_redis: MockRedisClient
 ):
     """Test that the Service Layer correctly commits to the DB."""
+    org = await org_fixture(db_session)
     service = UserService(db_session, mock_redis)
-    user_data = UserCreate(name="service_user", password="1234")
+    user_data = UserCreate(name="service_user", password="1234", org_id=org.id)
 
     # Service calls repo.create and session.commit()
     new_user = await service.register_user(user_data)
@@ -55,10 +58,11 @@ async def test_db_isolation_and_truncation(db_session: AsyncSession):
 @pytest.mark.asyncio(loop_scope="session")
 async def test_service_update_user(db_session: AsyncSession, mock_redis):
     """Test updating existing data through the service layer."""
+    org = await org_fixture(db_session)
     service = UserService(db_session, mock_redis)
     # Setup
     initial_user = await service.register_user(
-        UserCreate(name="old_me", password="1234")
+        UserCreate(name="old_me", password="1234", org_id=org.id)
     )
 
     # Update

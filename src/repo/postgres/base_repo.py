@@ -28,7 +28,7 @@ class BaseRepository(Generic[ModelType]):
         """Returns a single model instance or None."""
         query = select(self.model).where(self.model.id == obj_id)
         result = await self.session.execute(query)
-        return result.scalar_one()
+        return result.scalar_one_or_none()
 
     async def list(self, limit: int = 100, offset: int = 0) -> Sequence[ModelType]:
         """Returns a sequence of model instances."""

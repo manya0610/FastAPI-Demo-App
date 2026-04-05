@@ -70,7 +70,6 @@ def failing_redis():
 @pytest_asyncio.fixture(scope="function")
 async def async_client():
     async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://"
+        transport=ASGITransport(app=app), base_url="http://"
     ) as client:
         yield client

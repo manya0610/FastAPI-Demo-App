@@ -6,7 +6,9 @@ from contextlib import asynccontextmanager
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from src.database import engine, get_db
+from src.schemas.org_schema import OrgCreate
 from src.schemas.user_schema import UserCreate
+from src.services.org_service import OrgService
 from src.services.user_service import UserService
 
 
@@ -38,15 +40,23 @@ def create_tables():
 
 
 async def seed_db():
+    await create_org()
     await create_user()
 
+
+async def create_org():
+    async_get_db = asynccontextmanager(get_db)
+    async with async_get_db() as session:
+        org_service = OrgService(session)
+        org_data = OrgCreate(name="manish")
+        await org_service.create_org(org_data)
 
 async def create_user():
     async_get_db = asynccontextmanager(get_db)
     async with async_get_db() as session:
-        service = UserService(session)
-        user_data = UserCreate(name="manish", password="1234")
-        await service.register_user(user_data)
+        user_service = UserService(session)
+        user_data = UserCreate(name="manish", password="1234", org_id=1)
+        await user_service.register_user(user_data)
 
 
 print("argument list", sys.argv)

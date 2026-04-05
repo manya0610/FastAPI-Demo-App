@@ -22,3 +22,8 @@ dependencies = [
     "sqlalchemy-utils>=0.42.1",
     "sqlalchemy[asyncio]>=2.0.43",
 ]
+
+[dependency-groups]
+dev = [
+    "py-spy>=0.4.1",
+]

@@ -1,22 +1,23 @@
 from pydantic import BaseModel, ConfigDict
 
 
-class UserCreate(BaseModel):
+class OrgCreate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     name: str
-    password: str
-    org_id: int
+    config: dict | None = None
 
 
-class UserPublic(BaseModel):
+class OrgPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="ignore")
+
     id: int
     name: str
+    config: dict | None = None
 
 
-class UserUpdate(BaseModel):
+class OrgUpdate(BaseModel):
     model_config = ConfigDict(from_attributes=True, extra="forbid")
 
     name: str | None = None
-    password: str | None = None
+    config: dict | None = None
